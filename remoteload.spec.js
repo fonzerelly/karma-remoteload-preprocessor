@@ -56,15 +56,15 @@ describe("remoteload", function() {
     });
 
     describe("Pattern.execStatefully", function () {
-      // describe("when global", function () {
-      //   it("should use the previously passed content if none gets passed", function () {
-      //     var content = "AAAxBBBx",
-      //         pattern = new remoteload.Pattern(/([^x]*)x/g, 1);
-      //     expect(pattern.execStatefully(content)[1]).toEqual("AAA");
-      //     expect(pattern.execStatefully()[1]).toEqual("BBB");
-      //     expect(pattern.execStatefully()).toBeNull();
-      //   });
-      // });
+      describe("when global", function () {
+        it("should use the previously passed content if none gets passed", function () {
+          var content = "AAAxBBBx",
+              pattern = new remoteload.Pattern(/([^x]*)x/g, 1);
+          expect(pattern.execStatefully(content)[1]).toEqual("AAA");
+          expect(pattern.execStatefully()[1]).toEqual("BBB");
+          expect(pattern.execStatefully()).toBeNull();
+        });
+      });
       describe("when local", function () {
         it("should use the previously passed content if none gets passed", function () {
           var content = "AAAxBBBx",
@@ -108,6 +108,16 @@ describe("remoteload", function() {
       expect(result.length).toBe(2);
       expect(result[0]).toBe(firstUrl);
       expect(result[1]).toBe(secondUrl);
+    });
+  });
+  describe("remoteload.loadUrls", function () {
+    it("should be defined", function () {
+      expect(remoteload.loadUrls).toBeDefined();
+      expect(remoteload.loadUrls instanceof Function).toBeTruthy();
+    });
+    it("should accespt an array of url strings", function () {
+      expect(partial(remoteload.loadUrls)).toThrow();
+      expect(partial(remoteload.loadUrls, [1])).toThrow();
     });
   });
 });

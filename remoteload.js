@@ -1,3 +1,5 @@
+//var request = require("request");
+
 function Pattern (regex, groupIndex) {
   if (!(regex instanceof RegExp)) {
     throw new Error("Pattern awaits a regular Expression as first Parameter");
@@ -52,5 +54,19 @@ module.exports = {
     }, []);
 
     return matches;
+  },
+
+  loadUrls: function(urls) {
+    if (!(urls instanceof Array)) {
+      throw new Error("loadUrls awaits an Array of strings");
+    }
+    urls.reduce(function (init, url) {
+      if (typeof url !== "string") {
+        throw new Error("loadUrls awaits an Array of strings");
+      }
+      //request(url);
+
+    }, {});
   }
+
 };
