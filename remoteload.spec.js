@@ -44,6 +44,7 @@ describe("remoteload", function() {
       expect(partial(remoteload.Pattern, /(.*)/, 1.1)).toThrow();
       expect(partial(remoteload.Pattern, /(.*)/, 2)).toThrow();
       expect(partial(remoteload.Pattern, /(.*)/, 1)).not.toThrow();
+      expect(partial(remoteload.Pattern, /\((.*)\)/, 2)).toThrow();
     });
 
     it("should create an object with the redex and the groupIndex", function () {
@@ -53,36 +54,60 @@ describe("remoteload", function() {
       expect(pattern.regex).toEqual(regex);
       expect(pattern.groupIndex).toEqual(groupIndex);
     });
+
+    describe("Pattern.execStatefully", function () {
+      // describe("when global", function () {
+      //   it("should use the previously passed content if none gets passed", function () {
+      //     var content = "AAAxBBBx",
+      //         pattern = new remoteload.Pattern(/([^x]*)x/g, 1);
+      //     expect(pattern.execStatefully(content)[1]).toEqual("AAA");
+      //     expect(pattern.execStatefully()[1]).toEqual("BBB");
+      //     expect(pattern.execStatefully()).toBeNull();
+      //   });
+      // });
+      describe("when local", function () {
+        it("should use the previously passed content if none gets passed", function () {
+          var content = "AAAxBBBx",
+              pattern = new remoteload.Pattern(/([^x]*)x/, 1);
+          expect(pattern.execStatefully(content)[1]).toEqual("AAA");
+          expect(pattern.execStatefully()).toBeNull();
+        });
+      });
+    });
   });
 
-  describe("extractUrls", function() {
+  describe("extractPatternGroup", function() {
     it("should be defined", function () {
-      expect(remoteload.extractUrls).toBeDefined();
-      expect(remoteload.extractUrls instanceof Function).toBeTruthy();
+      expect(remoteload.extractPatternGroup).toBeDefined();
+      expect(remoteload.extractPatternGroup instanceof Function).toBeTruthy();
     });
 
     it("should accept content string as first argument", function() {
-       expect(partial(remoteload.extractUrls)).toThrow();
+       expect(partial(remoteload.extractPatternGroup)).toThrow();
     });
 
     it("should accept an array of patterns", function () {
-      expect(partial(remoteload.extractUrls, "")).toThrow();
+      expect(partial(remoteload.extractPatternGroup, "")).toThrow();
     });
 
     it("should accept only the patterntype", function () {
-      expect(partial(remoteload.extractUrls, "", [""])).toThrow();
-      expect(partial(remoteload.extractUrls, "", [new remoteload.Pattern(/(.*)/, 1)])).not.toThrow();
+      expect(partial(remoteload.extractPatternGroup, "", [""])).toThrow();
+      expect(partial(remoteload.extractPatternGroup, "", [new remoteload.Pattern(/(.*)/, 1)])).not.toThrow();
     });
 
-    // it("should return all occurences of pattern matches", function () {
-    //   var firstUrl = "http://localhost:8080",
-    //       secondUrl = "www.google.com",
-    //       content = "load(" + firstUrl + ");\n" +
-    //                 "http.get( '" + secondUrl + "' )",
-    //       result = remoteload.extractUrls(content, [
-    //         /
-    //
-    //   expect(remoteload.extractUrls("load('http://localhost:8080');\nhttp.get('www.google.com')"
-    // });
+    it("should return all occurences of pattern matches", function () {
+      var firstUrl = "http://localhost:8080",
+          secondUrl = "www.google.com",
+          content = "load(\"" + firstUrl + "\");\n" +
+                    "http.get( '" + secondUrl + "' )",
+          result = remoteload.extractPatternGroup(content, [
+            new remoteload.Pattern(/load\("(.*)"\);/,1),
+            new remoteload.Pattern(/http.get\s*\(\s*["'](.*)["']\s*\)/, 1)
+          ]);
+
+      expect(result.length).toBe(2);
+      expect(result[0]).toBe(firstUrl);
+      expect(result[1]).toBe(secondUrl);
+    });
   });
 });
