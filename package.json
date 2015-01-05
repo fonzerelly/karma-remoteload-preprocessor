@@ -1,0 +1,32 @@
+{
+  "name": "karma-remoteload-preprocessor",
+  "version": "0.0.1",
+  "description": "Karma preprocessor that downloads http resources by parsing test code.",
+  "author": "Christian Hoerauf <christianhoerauf@web.de>",
+  "contributors": [],
+  "main": "index.js",
+  "dependencies": {
+    "request": "*"
+  },
+  "devDependencies": {
+    "jasmine-node": "*"
+  },
+  "scripts": {
+    "test": "jasmine-node --color --autotest ."
+  },
+  "repository": {
+    "type": "git",
+    "url":  "git@github.com:fonzerelly/karma-remoteload-preprocessor.git"
+  },
+  "keywords": [
+    "karma",
+    "karma-plugin",
+    "karma-preprocessor",
+    "http",
+    "resource"
+  ],
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/fonzerelly/karma-remoteload-preprocessor/issues"
+  }
+}
