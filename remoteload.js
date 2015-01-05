@@ -1,4 +1,4 @@
-//var request = require("request");
+var request = require("request");
 
 function Pattern (regex, groupIndex) {
   if (!(regex instanceof RegExp)) {
@@ -64,8 +64,7 @@ module.exports = {
       if (typeof url !== "string") {
         throw new Error("loadUrls awaits an Array of strings");
       }
-      //request(url);
-
+      request.get(url);
     }, {});
   }
 

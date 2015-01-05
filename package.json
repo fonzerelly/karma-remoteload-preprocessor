@@ -9,7 +9,8 @@
     "request": "*"
   },
   "devDependencies": {
-    "jasmine-node": "*"
+    "jasmine-node": "*",
+    "proxyquire": "*"
   },
   "scripts": {
     "test": "jasmine-node --color --autotest ."

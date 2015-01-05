@@ -1,4 +1,8 @@
-var remoteload = require("./remoteload");
+var proxyquire  = require('proxyquire'),
+    requestMock = {};
+var remoteload  = proxyquire("./remoteload", {
+  "request": requestMock
+});
 
 function partial(func /*args*/) {
   var args = Array.prototype.slice.call(arguments, 1);
@@ -111,6 +115,12 @@ describe("remoteload", function() {
     });
   });
   describe("remoteload.loadUrls", function () {
+    var handledUrls;
+    beforeEach(function() {
+      handledUrls = [];
+      requestMock.get = handledUrls.push.bind(handledUrls);
+    });
+
     it("should be defined", function () {
       expect(remoteload.loadUrls).toBeDefined();
       expect(remoteload.loadUrls instanceof Function).toBeTruthy();
@@ -118,6 +128,16 @@ describe("remoteload", function() {
     it("should accespt an array of url strings", function () {
       expect(partial(remoteload.loadUrls)).toThrow();
       expect(partial(remoteload.loadUrls, [1])).toThrow();
+    });
+    it("should call request.get for each url", function () {
+      var urls = [
+        "http://localhost:8080/index.html",
+        "http://www.google.com"
+      ];
+      remoteload.loadUrls(urls);
+      expect(handledUrls.length).toBe(urls.length);
+      expect(handledUrls[0]).toEqual(urls[0]);
+      expect(handledUrls[1]).toEqual(urls[1]);
     });
   });
 });
