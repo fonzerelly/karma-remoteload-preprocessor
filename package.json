@@ -6,11 +6,14 @@
   "contributors": [],
   "main": "index.js",
   "dependencies": {
-    "request": "*"
+    "request": "*",
+    "temp"   : "*",
+    "async": "*"
   },
   "devDependencies": {
     "jasmine-node": "*",
-    "proxyquire": "*"
+    "proxyquire": "*",
+    "object-keys": "*",
   },
   "scripts": {
     "test": "jasmine-node --color --autotest ."

@@ -1,4 +1,6 @@
 var request = require("request");
+var async = require("async");
+var temp = require("temp");
 
 function Pattern (regex, groupIndex) {
   if (!(regex instanceof RegExp)) {
@@ -56,16 +58,56 @@ module.exports = {
     return matches;
   },
 
-  loadUrls: function(urls) {
+  loadUrls: function(urls, finishLoadUrls) {
     if (!(urls instanceof Array)) {
       throw new Error("loadUrls awaits an Array of strings");
     }
-    urls.reduce(function (init, url) {
+    urls.forEach(function (url) {
       if (typeof url !== "string") {
         throw new Error("loadUrls awaits an Array of strings");
       }
-      request.get(url);
-    }, {});
+    });
+    if (!(finishLoadUrls instanceof Function)) {
+      throw new Error("loadUrls provides its results to the finishLoadUrls function you missed");
+    }
+    var urlTemporaries = {};
+    async.forEach(urls, function(url, finishUrl) {
+      var
+      tempFile = null,
+      suffix = "unknown",
+      urlRequest = null;
+
+      async.series([
+        function requestUrl (finishRequestUrl) {
+          urlRequest = request
+            .get(url)
+            .on("response", function (response) {
+               var
+               mimetype = response.headers["content-type"],
+               slashIndex = mimetype.indexOf("/");
+
+               if(slashIndex < 0) {
+                 throw new Error("Invalid Mimetype format: \"" + mimetype + "\"");
+               }
+               suffix  = "." + mimetype.slice(slashIndex + 1);
+               finishRequestUrl();
+            });
+        },
+        function storeTemp(finishStoreTemp) {
+           tempFile = temp.createWriteStream({
+            prefix: "remoteload_",
+            suffix: suffix
+          });
+
+          urlTemporaries[url] = tempFile.path;
+          finishStoreTemp();
+        }
+      ], finishUrl);
+    }, function (err) {
+      if (err) throw err;
+      finishLoadUrls(null, urlTemporaries);
+    });
+
   }
 
 };
