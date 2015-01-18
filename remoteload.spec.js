@@ -1,10 +1,18 @@
 var keys = require("object-keys"),
     path = require("path"),
+    fs = require("fs"),
     proxyquire  = require('proxyquire'),
     requestMock = {};
 var remoteload  = proxyquire("./remoteload", {
   "request": requestMock
 });
+
+function checkFunctionDefinition (funcName) {
+  it("should be defined", function () {
+      expect(remoteload[funcName]).toBeDefined();
+      expect(remoteload[funcName] instanceof Function).toBeTruthy();
+  });
+}
 
 function partial(func /*args*/) {
   var args = Array.prototype.slice.call(arguments, 1);
@@ -33,10 +41,7 @@ describe("partial", function () {
 
 describe("remoteload", function() {
   describe("Pattern", function() {
-    it("should be defined", function () {
-      expect(remoteload.Pattern).toBeDefined();
-      expect(remoteload.Pattern instanceof Function).toBeTruthy();
-    });
+    checkFunctionDefinition("Pattern");
 
     it("should take a RegExp as first parameter", function () {
       expect(partial(remoteload.Pattern)).toThrow();
@@ -83,10 +88,7 @@ describe("remoteload", function() {
   });
 
   describe("extractPatternGroup", function() {
-    it("should be defined", function () {
-      expect(remoteload.extractPatternGroup).toBeDefined();
-      expect(remoteload.extractPatternGroup instanceof Function).toBeTruthy();
-    });
+    checkFunctionDefinition("extractPatternGroup");
 
     it("should accept content string as first argument", function() {
        expect(partial(remoteload.extractPatternGroup)).toThrow();
@@ -116,6 +118,47 @@ describe("remoteload", function() {
       expect(result[1]).toBe(secondUrl);
     });
   });
+
+  describe("remoteload.createCountProxy", function () {
+    beforeEach(function () {
+      this.callback = function () {};
+      spyOn(this, "callback");
+    });
+    checkFunctionDefinition("createCountProxy");
+
+    it("should take an integer and a callback", function() {
+      expect(partial(remoteload.createCountProxy)).toThrow();
+      expect(partial(remoteload.createCountProxy, 1)).toThrow();
+      expect(partial(remoteload.createCountProxy, 1, this.callback)).not.toThrow();
+    });
+
+    it("should return a function", function () {
+      expect(remoteload.createCountProxy(1, this.callback) instanceof Function).toBeTruthy();
+    });
+
+    it("should call the call back the first time", function () {
+      var proxiedCallback = remoteload.createCountProxy(1, this.callback);
+      proxiedCallback();
+      expect(this.callback).toHaveBeenCalled();
+    });
+
+    it("should call the callback only the second time", function () {
+      var proxiedCallback = remoteload.createCountProxy(2, this.callback);
+      proxiedCallback();
+      expect(this.callback).not.toHaveBeenCalled();
+      proxiedCallback();
+      expect(this.callback).toHaveBeenCalled();
+    });
+
+    it("should return a proxy, adopting the callbacks interface", function () {
+      var proxiedCallback = remoteload.createCountProxy(1, this.callback),
+          param_a = 1,
+          param_b = "doof";
+      proxiedCallback(param_a, param_b);
+      expect(this.callback).toHaveBeenCalledWith(param_a, param_b);
+    });
+  });
+
   describe("remoteload.loadUrls", function () {
     beforeEach(function() {
       this.dummyNet= {
@@ -130,11 +173,13 @@ describe("remoteload", function() {
       };
       this.handledUrls = [];
       var self = this;
+
       requestMock.get = function (url) {
         self.handledUrls.push(url);
         this._calledUrl = url;
         return this;
       };
+
       requestMock.on = function (event, callback) {
         expect(event).toEqual("response");
         var eventData = {
@@ -146,27 +191,43 @@ describe("remoteload", function() {
             callback.bind(null, eventData),
             10
         );
+        return this;
+      };
+
+      requestMock.pipe = function (stream) {
+        stream.write(self.dummyNet[this._calledUrl].content);
+        stream.end();
       };
     });
 
-    it("should be defined", function () {
+    it("should be defined", function (done) {
       expect(remoteload.loadUrls).toBeDefined();
       expect(remoteload.loadUrls instanceof Function).toBeTruthy();
+      done();
     });
-    it("should accept an array of url strings", function () {
+    it("should accept an array of url strings", function (done) {
       expect(partial(remoteload.loadUrls)).toThrow();
       expect(partial(remoteload.loadUrls, [1])).toThrow();
+      done();
     });
-    it("should accept a callback for after downloading all files", function () {
+    it("should accept a callback for after downloading all files", function (done) {
       expect(partial(remoteload.loadUrls, ["http://localhost:8080/index.html"])).toThrow();
-      expect(partial(remoteload.loadUrls, ["http://localhost:8080/index.html"], function () {})).not.toThrow();
+      expect(partial(remoteload.loadUrls, ["http://localhost:8080/index.html"], done)).not.toThrow();
     });
-    it("should call request.get for each url", function () {
-      var urls = keys(this.dummyNet);
-      remoteload.loadUrls(urls, function () {});
-      expect(this.handledUrls.length).toBe(urls.length);
-      expect(this.handledUrls[0]).toEqual(urls[0]);
-      expect(this.handledUrls[1]).toEqual(urls[1]);
+    describe("usage of urls", function() {
+      beforeEach(function(done) {
+        var urls = keys(this.dummyNet);
+        remoteload.loadUrls(urls, function () {
+          done();
+        });
+      });
+      it("should call request.get for each url", function (done) {
+        var urls = keys(this.dummyNet);
+        expect(this.handledUrls.length).toBe(urls.length);
+        expect(this.handledUrls[0]).toEqual(urls[0]);
+        expect(this.handledUrls[1]).toEqual(urls[1]);
+        done();
+      });
     });
     describe("callback", function () {
       beforeEach(function (done) {
@@ -183,16 +244,25 @@ describe("remoteload", function() {
       });
 
       it("should provide keys representing the urls", function () {
-        expect(keys(this.result)).toEqual(this.urls);
+        expect(keys(this.result).sort()).toEqual(this.urls.sort());
       });
 
       it("should have values of temp filenames", function () {
         var self = this;
         keys(self.result).forEach(function (url) {
-            var mimetype = self.dummyNet[url].mimetype,
-                suffix = mimetype.slice(mimetype.indexOf("/")+1);
-                regex = new RegExp("remoteload_.*\\."+suffix);
-            expect(path.basename(self.result[url])).toMatch(regex);
+          var mimetype = self.dummyNet[url].mimetype,
+              suffix = mimetype.slice(mimetype.indexOf("/")+1);
+              regex = new RegExp("remoteload_.*\\."+suffix);
+          expect(path.basename(self.result[url])).toMatch(regex);
+        });
+      });
+
+
+      xit("should have stored the content of the url", function () {
+        var self = this;
+        keys(self.result).forEach(function (url) {
+          var file_content = fs.readFileSync(self.result[url]);
+          // expect(file_content).toEqual(self.dummyNet[url].content);
         });
       });
     });
