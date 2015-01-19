@@ -258,11 +258,11 @@ describe("remoteload", function() {
       });
 
 
-      xit("should have stored the content of the url", function () {
+      it("should have stored the content of the url", function () {
         var self = this;
         keys(self.result).forEach(function (url) {
-          var file_content = fs.readFileSync(self.result[url]);
-          // expect(file_content).toEqual(self.dummyNet[url].content);
+          var file_content = fs.readFileSync(self.result[url], "utf8");
+          expect(file_content).toEqual(self.dummyNet[url].content);
         });
       });
     });
