@@ -76,23 +76,13 @@ createCountProxy = function (count, callback) {
    };
 };
 
-var //assureTargetDir
-assureTargetDir = function (path) {
-  if (typeof path !== "string") {
-    throw new TypeError("assureTargetDir awaits a path string");
-  }
-
-  if(!fs.existsSync(path)) {
-    fs.mkdirSync(path);
-  }
-};
-
 var //loadUrls
-_requestUrl = function (url, finishRequest) {
+_requestUrl = function (url, targetDir, finishRequest) {
   var
   countedFinishRequest = createCountProxy(2, finishRequest),
   suffix = ".unknown",
   tempFile = temp.createWriteStream({
+    dir   : targetDir,
     prefix: "remoteload_"
   }).on("close", function (err) {
     countedFinishRequest(null, this.path, suffix);
@@ -121,7 +111,7 @@ _applyResult = function(finish_, urlTemporaries_, url_, err, temporary) {
   finish_();
 },
 
-loadUrls = function(urls, /*targetDir,*/ finishLoadUrls) {
+loadUrls = function(urls, targetDir, finishLoadUrls) {
   if (!(urls instanceof Array)) {
     throw new Error("loadUrls awaits an Array of strings");
   }
@@ -130,16 +120,16 @@ loadUrls = function(urls, /*targetDir,*/ finishLoadUrls) {
       throw new Error("loadUrls awaits an Array of strings");
     }
   });
-  // if (!fs.exists(targetDir)) {
-  //   throw new TypeError("loadurls awaits an existing target directory");
-  // }
+  if (!fs.existsSync(targetDir)) {
+    throw new TypeError("loadurls awaits an existing target directory");
+  }
   if (!(finishLoadUrls instanceof Function)) {
     throw new Error("loadUrls provides its results to the finishLoadUrls function you missed");
   }
   urlTemporaries = {};
   async.forEach(urls, function(url, finishUrl) {
     async.waterfall([
-      async.apply(_requestUrl, url),
+      async.apply(_requestUrl, url, targetDir),
       _appendSuffix
     ], async.apply(_applyResult, finishUrl, urlTemporaries, url));
   },function () {
@@ -152,7 +142,6 @@ module.exports = {
   Pattern: Pattern,
   extractPatternGroup: extractPatternGroup,
   createCountProxy: createCountProxy,
-  assureTargetDir: assureTargetDir,
   loadUrls: loadUrls
 
 };

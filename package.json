@@ -8,12 +8,13 @@
   "dependencies": {
     "request": "*",
     "temp"   : "*",
-    "async": "*"
+    "async": "*",
+    "fs-extra": "*"
   },
   "devDependencies": {
     "jasmine-node": "*",
     "proxyquire": "*",
-    "object-keys": "*",
+    "object-keys": "*"
   },
   "scripts": {
     "test": "jasmine-node --color --autotest ."

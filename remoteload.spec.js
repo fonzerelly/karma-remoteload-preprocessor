@@ -1,6 +1,6 @@
 var keys = require("object-keys"),
     path = require("path"),
-    fs = require("fs"),
+    fs = require("fs-extra"),
     proxyquire  = require('proxyquire'),
     requestMock = {};
 var remoteload  = proxyquire("./remoteload", {
@@ -119,35 +119,6 @@ describe("remoteload", function() {
     });
   });
 
-  describe("remoteload.assureTargetDir", function () {
-    var path = "dummy-fixture";
-    afterEach(function () {
-      if (fs.existsSync(path)) {
-        fs.rmdirSync(path);
-      }
-    });
-
-    checkFunctionDefinition("assureTargetDir");
-
-    it("should accept the path as string", function () {
-      expect(partial(remoteload.assureTargetDir)).toThrow();
-      expect(partial(remoteload.assureTargetDir, path)).not.toThrow();
-    });
-
-    describe("when path exists", function () {
-      it("should not do anything", function() {
-        fs.mkdirSync(path);
-        expect(partial(remoteload.assureTargetDir, path)).not.toThrow();
-      });
-    });
-    describe("when path does not exist", function() {
-      it("should create path", function() {
-        remoteload.assureTargetDir(path);
-        expect(fs.existsSync(path)).toBeTruthy();
-      });
-    });
-  });
-
   describe("remoteload.createCountProxy", function () {
     beforeEach(function () {
       this.callback = function () {};
@@ -190,6 +161,8 @@ describe("remoteload", function() {
 
   describe("remoteload.loadUrls", function () {
     beforeEach(function() {
+      this.path = "fixtures";
+      fs.mkdirSync(this.path);
       this.dummyNet= {
         "http://localhost:8080/index.html": {
           mimetype: "text/html",
@@ -228,6 +201,9 @@ describe("remoteload", function() {
         stream.end();
       };
     });
+    afterEach(function() {
+      fs.removeSync(this.path);
+    });
 
     it("should be defined", function (done) {
       expect(remoteload.loadUrls).toBeDefined();
@@ -244,13 +220,16 @@ describe("remoteload", function() {
       done();
     });
     it("should accept a callback for after downloading all files", function (done) {
-      expect(partial(remoteload.loadUrls, ["http://localhost:8080/index.html"], "fixutres/")).toThrow();
-      expect(partial(remoteload.loadUrls, ["http://localhost:8080/index.html"], done)).not.toThrow();
+      expect(partial(remoteload.loadUrls, ["http://localhost:8080/index.html"], this.path)).toThrow();
+      done();
+    });
+    it("should work with all parameters", function(done) {
+      expect(partial(remoteload.loadUrls, ["http://localhost:8080/index.html"], this.path, done)).not.toThrow();
     });
     describe("usage of urls", function() {
       beforeEach(function(done) {
         var urls = keys(this.dummyNet);
-        remoteload.loadUrls(urls, function () {
+        remoteload.loadUrls(urls, this.path, function () {
           done();
         });
       });
@@ -273,7 +252,7 @@ describe("remoteload", function() {
           self.error = error;
           done();
         };
-        remoteload.loadUrls(self.urls, self.callback);
+        remoteload.loadUrls(self.urls, self.path, self.callback);
       });
 
       it("should provide keys representing the urls", function () {
@@ -290,6 +269,12 @@ describe("remoteload", function() {
         });
       });
 
+      it("should store temp files in the targetDir", function () {
+        var self = this;
+        keys(self.result).forEach(function (url) {
+          expect(path.dirname(self.result[url])).toEqual(self.path);
+        });
+      });
 
       it("should have stored the content of the url", function () {
         var self = this;
