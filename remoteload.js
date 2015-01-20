@@ -76,6 +76,17 @@ createCountProxy = function (count, callback) {
    };
 };
 
+var //assureTargetDir
+assureTargetDir = function (path) {
+  if (typeof path !== "string") {
+    throw new TypeError("assureTargetDir awaits a path string");
+  }
+
+  if(!fs.existsSync(path)) {
+    fs.mkdirSync(path);
+  }
+};
+
 var //loadUrls
 _requestUrl = function (url, finishRequest) {
   var
@@ -110,7 +121,7 @@ _applyResult = function(finish_, urlTemporaries_, url_, err, temporary) {
   finish_();
 },
 
-loadUrls = function(urls, finishLoadUrls) {
+loadUrls = function(urls, /*targetDir,*/ finishLoadUrls) {
   if (!(urls instanceof Array)) {
     throw new Error("loadUrls awaits an Array of strings");
   }
@@ -119,6 +130,9 @@ loadUrls = function(urls, finishLoadUrls) {
       throw new Error("loadUrls awaits an Array of strings");
     }
   });
+  // if (!fs.exists(targetDir)) {
+  //   throw new TypeError("loadurls awaits an existing target directory");
+  // }
   if (!(finishLoadUrls instanceof Function)) {
     throw new Error("loadUrls provides its results to the finishLoadUrls function you missed");
   }
@@ -138,6 +152,7 @@ module.exports = {
   Pattern: Pattern,
   extractPatternGroup: extractPatternGroup,
   createCountProxy: createCountProxy,
+  assureTargetDir: assureTargetDir,
   loadUrls: loadUrls
 
 };

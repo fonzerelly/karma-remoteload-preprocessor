@@ -119,6 +119,35 @@ describe("remoteload", function() {
     });
   });
 
+  describe("remoteload.assureTargetDir", function () {
+    var path = "dummy-fixture";
+    afterEach(function () {
+      if (fs.existsSync(path)) {
+        fs.rmdirSync(path);
+      }
+    });
+
+    checkFunctionDefinition("assureTargetDir");
+
+    it("should accept the path as string", function () {
+      expect(partial(remoteload.assureTargetDir)).toThrow();
+      expect(partial(remoteload.assureTargetDir, path)).not.toThrow();
+    });
+
+    describe("when path exists", function () {
+      it("should not do anything", function() {
+        fs.mkdirSync(path);
+        expect(partial(remoteload.assureTargetDir, path)).not.toThrow();
+      });
+    });
+    describe("when path does not exist", function() {
+      it("should create path", function() {
+        remoteload.assureTargetDir(path);
+        expect(fs.existsSync(path)).toBeTruthy();
+      });
+    });
+  });
+
   describe("remoteload.createCountProxy", function () {
     beforeEach(function () {
       this.callback = function () {};
@@ -210,8 +239,12 @@ describe("remoteload", function() {
       expect(partial(remoteload.loadUrls, [1])).toThrow();
       done();
     });
+    it("should accept a target directory", function (done) {
+      expect(partial(remoteload.loadUrls, ["url"])).toThrow();
+      done();
+    });
     it("should accept a callback for after downloading all files", function (done) {
-      expect(partial(remoteload.loadUrls, ["http://localhost:8080/index.html"])).toThrow();
+      expect(partial(remoteload.loadUrls, ["http://localhost:8080/index.html"], "fixutres/")).toThrow();
       expect(partial(remoteload.loadUrls, ["http://localhost:8080/index.html"], done)).not.toThrow();
     });
     describe("usage of urls", function() {
