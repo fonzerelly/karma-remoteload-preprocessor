@@ -5,7 +5,7 @@ temp = require("temp"),
 fs = require("fs");
 
 var //Pattern definition
-Pattern = function (regex, groupIndex) {
+Pattern = function (regex, groupIndex, substitute) {
   if (!(regex instanceof RegExp)) {
     throw new Error("Pattern awaits a regular Expression as first Parameter");
   }
@@ -13,10 +13,15 @@ Pattern = function (regex, groupIndex) {
   //Assure that the groupIndex has a corresponding group in the regex
   var braketMatch = regex.toString().match(/([^\\]\()/g);
   if (typeof groupIndex !== "number" || (groupIndex > 0 && !braketMatch[groupIndex -1])) {
-    throw Error ("The groupIndex " + groupIndex + " does not fit a group in your Regex");
+    throw new Error ("The groupIndex " + groupIndex + " does not fit a group in your Regex");
+  }
+
+  if(typeof substitute !== "string" || substitute.indexOf(this.__GET_MARKER__()) < 0) {
+    throw new Error ("The substitude \"" + substitute + "\" does not contain the marker \""+ this.__GET_MARKER__() +"\"");
   }
   this.regex = regex;
   this.groupIndex = groupIndex;
+  this.substitute = substitute;
 };
 
 Pattern.prototype.execStatefully = function (content) {
@@ -29,6 +34,10 @@ Pattern.prototype.execStatefully = function (content) {
   }
   this._content = content;
   return this.regex.exec(content);
+};
+
+Pattern.prototype.__GET_MARKER__ = function () {
+  return "%RESOURCE%";
 };
 
 var //extractPatternGroup
@@ -137,12 +146,20 @@ loadUrls = function(urls, targetDir, finishLoadUrls) {
   });
 };
 
+var modifyContent = function(content) {
+  if (typeof content !== "string") {
+    throw new Error("modifyContennt expects a string as content");
+  }
+};
+
 module.exports = {
 
-  Pattern: Pattern,
-  extractPatternGroup: extractPatternGroup,
-  createCountProxy: createCountProxy,
-  loadUrls: loadUrls
+  Pattern             : Pattern,
+  extractPatternGroup : extractPatternGroup,
+  createCountProxy    : createCountProxy,
+  loadUrls            : loadUrls,
+  modifyContent       : modifyContent
+
 
 };
 

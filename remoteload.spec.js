@@ -41,36 +41,47 @@ describe("partial", function () {
 
 describe("remoteload", function() {
   describe("Pattern", function() {
+    var __MARKER__ = remoteload.Pattern.prototype.__GET_MARKER__();
+    var boundConstructor = remoteload.Pattern.bind(remoteload.Pattern.prototype);
     checkFunctionDefinition("Pattern");
 
     it("should take a RegExp as first parameter", function () {
-      expect(partial(remoteload.Pattern)).toThrow();
-      expect(partial(remoteload.Pattern, /(.*)/, 0)).not.toThrow();
-      expect(partial(remoteload.Pattern, new RegExp(), 0)).not.toThrow();
+      expect(partial(boundConstructor)).toThrow();
+      expect(partial(boundConstructor, /(.*)/, 0, __MARKER__)).not.toThrow();
+      expect(partial(boundConstructor, new RegExp(), 0, __MARKER__)).not.toThrow();
     });
 
     it("should take an integer as second parameter", function () {
-      expect(partial(remoteload.Pattern, /(.*)/)).toThrow();
-      expect(partial(remoteload.Pattern, /(.*)/, 0)).not.toThrow();
-      expect(partial(remoteload.Pattern, /(.*)/, 1.1)).toThrow();
-      expect(partial(remoteload.Pattern, /(.*)/, 2)).toThrow();
-      expect(partial(remoteload.Pattern, /(.*)/, 1)).not.toThrow();
-      expect(partial(remoteload.Pattern, /\((.*)\)/, 2)).toThrow();
+      expect(partial(boundConstructor, /(.*)/)).toThrow();
+      expect(partial(boundConstructor, /(.*)/, 0, __MARKER__)).not.toThrow();
+      expect(partial(boundConstructor, /(.*)/, 1.1)).toThrow();
+      expect(partial(boundConstructor, /(.*)/, 2)).toThrow();
+      expect(partial(boundConstructor, /(.*)/, 1, __MARKER__)).not.toThrow();
+      expect(partial(boundConstructor, /\((.*)\)/, 2)).toThrow();
     });
 
-    it("should create an object with the redex and the groupIndex", function () {
+    it("should take a string containing a marker as third parameter", function () {
+      expect(partial(boundConstructor, /(.*)/, 1)).toThrow();
+      expect(partial(boundConstructor, /(.*)/, 1, "")).toThrow();
+      expect(partial(boundConstructor, /(.*)/, 1, __MARKER__)).not.toThrow();
+    });
+
+    it("should create an object with the redex, the groupIndex and the substitute", function () {
       var regex = new RegExp("(.*) (.*)"),
           groupIndex = 2,
-          pattern = new remoteload.Pattern(regex, groupIndex);
+          substitute = __MARKER__,
+          pattern = new remoteload.Pattern(regex, groupIndex, substitute);
       expect(pattern.regex).toEqual(regex);
       expect(pattern.groupIndex).toEqual(groupIndex);
+      expect(pattern.substitute).toEqual(substitute);
     });
 
     describe("Pattern.execStatefully", function () {
+      var __MARKER__ = remoteload.Pattern.prototype.__GET_MARKER__();
       describe("when global", function () {
         it("should use the previously passed content if none gets passed", function () {
           var content = "AAAxBBBx",
-              pattern = new remoteload.Pattern(/([^x]*)x/g, 1);
+              pattern = new remoteload.Pattern(/([^x]*)x/g, 1, __MARKER__);
           expect(pattern.execStatefully(content)[1]).toEqual("AAA");
           expect(pattern.execStatefully()[1]).toEqual("BBB");
           expect(pattern.execStatefully()).toBeNull();
@@ -79,7 +90,7 @@ describe("remoteload", function() {
       describe("when local", function () {
         it("should use the previously passed content if none gets passed", function () {
           var content = "AAAxBBBx",
-              pattern = new remoteload.Pattern(/([^x]*)x/, 1);
+              pattern = new remoteload.Pattern(/([^x]*)x/, 1, __MARKER__);
           expect(pattern.execStatefully(content)[1]).toEqual("AAA");
           expect(pattern.execStatefully()).toBeNull();
         });
@@ -88,6 +99,7 @@ describe("remoteload", function() {
   });
 
   describe("extractPatternGroup", function() {
+    var __MARKER__ = remoteload.Pattern.prototype.__GET_MARKER__();
     checkFunctionDefinition("extractPatternGroup");
 
     it("should accept content string as first argument", function() {
@@ -100,7 +112,7 @@ describe("remoteload", function() {
 
     it("should accept only the patterntype", function () {
       expect(partial(remoteload.extractPatternGroup, "", [""])).toThrow();
-      expect(partial(remoteload.extractPatternGroup, "", [new remoteload.Pattern(/(.*)/, 1)])).not.toThrow();
+      expect(partial(remoteload.extractPatternGroup, "", [new remoteload.Pattern(/(.*)/, 1, __MARKER__)])).not.toThrow();
     });
 
     it("should return all occurences of pattern matches", function () {
@@ -109,8 +121,8 @@ describe("remoteload", function() {
           content = "load(\"" + firstUrl + "\");\n" +
                     "http.get( '" + secondUrl + "' )",
           result = remoteload.extractPatternGroup(content, [
-            new remoteload.Pattern(/load\("(.*)"\);/,1),
-            new remoteload.Pattern(/http.get\s*\(\s*["'](.*)["']\s*\)/, 1)
+            new remoteload.Pattern(/load\("(.*)"\);/,1, __MARKER__),
+            new remoteload.Pattern(/http.get\s*\(\s*["'](.*)["']\s*\)/, 1, __MARKER__)
           ]);
 
       expect(result.length).toBe(2);
@@ -283,6 +295,14 @@ describe("remoteload", function() {
           expect(file_content).toEqual(self.dummyNet[url].content);
         });
       });
+    });
+  });
+
+  xdescribe("modifyContent", function() {
+    checkFunctionDefinition("modifyContent");
+
+    it("should accept content", function () {
+      expect(partial(remoteload.modifyContent)).toThrow();
     });
   });
 });
