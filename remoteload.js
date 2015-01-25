@@ -93,6 +93,7 @@ var //loadUrls
 _requestUrl = function (url, targetDir, finishRequest) {
   var
   countedFinishRequest = createCountProxy(2, finishRequest),
+  suffixRegex = /\/([\w]*)(\W|$)/,
   suffix = ".unknown",
   tempFile = temp.createWriteStream({
     dir   : targetDir,
@@ -105,8 +106,10 @@ _requestUrl = function (url, targetDir, finishRequest) {
     .on("response", function(response) {
       var
       mimetype = response.headers["content-type"],
-      suffixIndex = mimetype.indexOf("/") + 1;
-      suffix = "." + mimetype.slice(suffixIndex);
+      match = suffixRegex.exec(mimetype);
+      if (match) {
+        suffix = "." + match[1];
+      }
 
       countedFinishRequest(null, tempFile.path, suffix);
     }).pipe(tempFile);

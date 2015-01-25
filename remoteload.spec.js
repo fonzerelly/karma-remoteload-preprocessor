@@ -184,7 +184,7 @@ describe("remoteload", function() {
       fs.mkdirSync(this.path);
       this.dummyNet= {
         "http://localhost:8080/index.html": {
-          mimetype: "text/html",
+          mimetype: "text/html; charset=utf-8",
           content : "<h1>mydummyserver</h1>",
         },
         "http://www.google.com/logo.png": {
@@ -282,8 +282,10 @@ describe("remoteload", function() {
         var self = this;
         keys(self.result).forEach(function (url) {
           var mimetype = self.dummyNet[url].mimetype,
-              suffix = mimetype.slice(mimetype.indexOf("/")+1);
-              regex = new RegExp("remoteload_.*\\."+suffix);
+              indexSemicolon = mimetype.indexOf(";"),
+              suffixEnd = indexSemicolon > 0 ? indexSemicolon : mimetype.length,
+              suffix = mimetype.slice(mimetype.indexOf("/")+1, suffixEnd);
+              regex = new RegExp("remoteload_.*\\."+suffix+"$");
           expect(path.basename(self.result[url])).toMatch(regex);
         });
       });
