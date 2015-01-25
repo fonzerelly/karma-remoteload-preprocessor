@@ -96,6 +96,13 @@ describe("remoteload", function() {
         });
       });
     });
+    describe("Pattern.applyInSubst", function () {
+      var __MARKER__ = remoteload.Pattern.prototype.__GET_MARKER__();
+      it("should return the substituion applied with the passed parameter", function () {
+        var pattern = new remoteload.Pattern(/(.*)/, 1, "Homer Simpson: \"%RESOURCE%\"");
+        expect(pattern.applyInSubst("Dough")).toEqual("Homer Simpson: \"Dough\"");
+      });
+    });
   });
 
   describe("extractPatternGroup", function() {
@@ -298,11 +305,62 @@ describe("remoteload", function() {
     });
   });
 
-  xdescribe("modifyContent", function() {
+  describe("modifyContent", function() {
+    beforeEach(function() {
+      this.firstUrl = "http://localhost:8080";
+      this.secondUrl = "www.google.com";
+      this.loadHead = "load(\"";
+      this.loadTail = "\");\n";
+      this.httpHead = "http.get(\"";
+      this.httpTail = "\")\n";
+      this.content = "blah blah blah\n" +
+                     this.loadHead + this.firstUrl + this.loadTail +
+                     this.httpHead + this.secondUrl + this.httpTail +
+                     "rabarba rabarba rabarba";
+      var __MARKER__ = remoteload.Pattern.prototype.__GET_MARKER__();
+      this.patterns = [
+        new remoteload.Pattern(
+          /load\("(.*)"\);/,
+          1,
+          "load(\"" + __MARKER__+"\");"
+        ),
+        new remoteload.Pattern(
+          /http.get\s*\(\s*["'](.*)["']\s*\)/,
+          1,
+          "http.get(\"" + __MARKER__ + "\")"
+        )
+      ];
+      this.urlTemporaries = {};
+      this.urlTemporaries[this.firstUrl] = "1234.html";
+      this.urlTemporaries[this.secondUrl] =  "5678.html";
+      this.awaitedResult = "blah blah blah\n" +
+                           this.loadHead + this.urlTemporaries[this.firstUrl] + this.loadTail +
+                           this.httpHead + this.urlTemporaries[this.secondUrl] + this.httpTail +
+                           "rabarba rabarba rabarba";
+    });
+
     checkFunctionDefinition("modifyContent");
 
     it("should accept content", function () {
       expect(partial(remoteload.modifyContent)).toThrow();
     });
+
+    it("should accept a Pattern", function () {
+      expect(partial(remoteload.modifyContent, this.content)).toThrow();
+    });
+
+    it("should accept an object of urls and temporaries", function() {
+      expect(partial(remoteload.modifyContent, this.content, this.patterns)).toThrow();
+    });
+
+    it("should return content with exchanged patterns", function () {
+      var result = remoteload.modifyContent(
+        this.content,
+        this.patterns,
+        this.urlTemporaries
+      );
+      expect(result).toEqual(this.awaitedResult);
+    });
+
   });
 });

@@ -40,6 +40,10 @@ Pattern.prototype.__GET_MARKER__ = function () {
   return "%RESOURCE%";
 };
 
+Pattern.prototype.applyInSubst = function (resource) {
+  return this.substitute.replace(this.__GET_MARKER__(), resource);
+};
+
 var //extractPatternGroup
 extractPatternGroup = function(content, patterns) {
   if (typeof content !== "string") {
@@ -146,10 +150,41 @@ loadUrls = function(urls, targetDir, finishLoadUrls) {
   });
 };
 
-var modifyContent = function(content) {
+var modifyContent = function(content, patterns, urlTemporaries) {
   if (typeof content !== "string") {
     throw new Error("modifyContennt expects a string as content");
   }
+  if (!(patterns instanceof Array)) {
+    throw new Error("modifyContent expects an Array of Patterns as second parameter");
+  }
+
+  patterns.forEach(function(pattern) {
+    if (!(pattern instanceof Pattern)) {
+      throw new Error("modifyContent expects an Array of Patterns as second parameter");
+    }
+  });
+
+  if (!urlTemporaries) {
+    throw new Error("modifyContent expects an object of url-tempfile pairs");
+  }
+  for (var url in urlTemporaries) {
+    if (typeof urlTemporaries[url] !== "string") {
+      throw new Error("modifyContent expects an object of url-tempfile pairs");
+    }
+  }
+  var modifiedContent = patterns.reduce(function(init, pattern) {
+    var match = pattern.execStatefully(content);
+    while (match !== null) {
+      init[0] += content.slice(init[1], match.index);
+      init[0] += pattern.applyInSubst(urlTemporaries[match[pattern.groupIndex]]);
+      init[1] = match.index + match[0].length;
+      match = pattern.execStatefully();
+    }
+    return init;
+
+  }, ["", 0]);
+
+  return modifiedContent[0] + content.slice(modifiedContent[1]);
 };
 
 module.exports = {
@@ -159,7 +194,6 @@ module.exports = {
   createCountProxy    : createCountProxy,
   loadUrls            : loadUrls,
   modifyContent       : modifyContent
-
 
 };
 
