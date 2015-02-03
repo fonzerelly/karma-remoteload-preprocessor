@@ -1,14 +1,15 @@
 console.log("plugin recognized");
-var preLoad = function (loggerFactory) {
-  var logger = loggerFactory.create("preprocessor:preload");
+var createRemoteLoader = function (loggerFactory, conf) {
+  console.log(conf);
+  //var logger = loggerFactory.create("preprocessor:remoteload");
 
   return function (content, file, done) {
     console.log(file);
     done(content.replace("doof", "intelligent"));
   };
 };
-preLoad.$inject = ['logger'];
+createRemoteLoader.$inject = ['logger', 'config.remoteloadPreprocessor'];
 
 module.exports = {
-  'preprocessor:preload': [ 'factory', preLoad ]
+  'preprocessor:remoteload': [ 'factory', createRemoteLoader]
 };
