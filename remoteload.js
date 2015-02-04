@@ -116,7 +116,7 @@ _requestUrl = function (url, targetDir, finishRequest) {
 },
 
 _appendSuffix = function(path, suffix, finishSuffix) {
-   var pathWithSuffix = path + suffix;
+   var pathWithSuffix = path.replace('\\','/') + suffix;
    fs.rename(path, pathWithSuffix, function () {
      finishSuffix(null, pathWithSuffix);
    });

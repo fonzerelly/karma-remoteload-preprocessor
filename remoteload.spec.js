@@ -180,7 +180,7 @@ describe("remoteload", function() {
 
   describe("remoteload.loadUrls", function () {
     beforeEach(function() {
-      this.path = "fixtures";
+      this.path = ".fixtures_remoteloadspec";
       fs.mkdirSync(this.path);
       this.dummyNet= {
         "http://localhost:8080/index.html": {
@@ -289,6 +289,14 @@ describe("remoteload", function() {
           expect(path.basename(self.result[url])).toMatch(regex);
         });
       });
+
+      it("should replace backslash by slash in temp filenames", function () {
+        var self = this;
+        keys(self.result).forEach(function (url) {
+          expect(self.result[url].indexOf("\\")).toEqual(-1);
+          expect(self.result[url].indexOf("/")).toBeGreaterThan(-1);
+        });
+      })
 
       it("should store temp files in the targetDir", function () {
         var self = this;
